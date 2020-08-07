@@ -22,18 +22,14 @@ RUN \
  && echo 'deb [arch=amd64] http://repo.sawtooth.me/ubuntu/chime/stable bionic universe' >> /etc/apt/sources.list \
  && apt-get update
 
-RUN apt-get install -y --allow-unauthenticated -q python3-grpcio-tools \
-    python3-pip \
+RUN apt-get install -y --allow-unauthenticated -q python3-pip \
+    # python3-grpcio-tools \
     python3-sawtooth-rest-api \
     python3-sawtooth-sdk
 
-RUN pip3 install \
-    aiohttp \
-    aiopg \
-    bcrypt \
-    itsdangerous \
-    pycrypto \
-    psycopg2-binary
+COPY rest_api/requirements.txt /requirements.txt
+
+RUN pip3 install -r /requirements.txt
 
 
 WORKDIR /project/sawtooth-simple-supply

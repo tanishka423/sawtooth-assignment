@@ -23,11 +23,13 @@ RUN \
  && apt-get update
 
 RUN apt-get install -y --allow-unauthenticated -q \
-    python3-pip \
-    python3-sawtooth-sdk
+    python3-pip
 
-RUN pip3 install \
-    psycopg2-binary
+COPY subscriber/requirements.txt /requirements.txt
+
+RUN pip3 install -r /requirements.txt
+
+RUN apt-get install -y --allow-unauthenticated -q python3-sawtooth-sdk
 
 WORKDIR /project/sawtooth-simple-supply
 

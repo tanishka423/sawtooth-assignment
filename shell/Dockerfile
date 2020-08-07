@@ -22,6 +22,8 @@ RUN \
  && echo 'deb [arch=amd64] http://repo.sawtooth.me/ubuntu/chime/stable bionic universe' >> /etc/apt/sources.list \
  && apt-get update
 
+COPY shell/requirements.txt /requirements.txt
+
 RUN apt-get install -y --allow-unauthenticated -q \
     curl \
     python3-pip \
@@ -32,17 +34,8 @@ RUN apt-get install -y --allow-unauthenticated -q \
 RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - \
     && apt-get install -y nodejs npm
 
-RUN pip3 install \
-    aiohttp \
-    aiopg \
-    bcrypt \
-    grpcio-tools \
-    itsdangerous \
-    nose2 \
-    psycopg2-binary \
-    pycrypto \
-    pylint \
-    pycodestyle
+
+RUN pip3 install -r /requirements.txt
 
 WORKDIR /project/sawtooth-simple-supply
 
