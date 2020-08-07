@@ -23,6 +23,10 @@ RUN \
  && apt-get update
 
 RUN apt-get install -y -q python3-sawtooth-sdk
+RUN apt-get install -y --allow-unauthenticated -q python3-pip
+COPY processor/requirements.txt /requirements.txt
+
+RUN pip3 install -r /requirements.txt
 
 WORKDIR /project/sawtooth-simple-supply
 
