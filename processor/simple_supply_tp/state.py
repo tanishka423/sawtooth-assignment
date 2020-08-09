@@ -33,7 +33,20 @@ class SimpleSupplyState(object):
         Returns:
             agent_pb2.Agent: Agent with the provided public_key
         """
-        #    Write code here
+        address=addresser.get_agent_address(public_key)
+        state_entries=self._context.get_state(
+            addresses=[address], timeout=self._timeout)
+        if state_entries:
+            container=agent_pb2.AgentContainer()
+            container.ParseFromString(state_entries[0].data)
+            for agent in container.entries:
+                if agent.public_key==public_key:
+                    return agent
+         return None
+                
+                
+                
+                #    Write code here
 
 
     def set_agent(self, public_key, name, timestamp):
@@ -44,6 +57,21 @@ class SimpleSupplyState(object):
             name (str): The human-readable name of the agent
             timestamp (int): Unix UTC timestamp of when the agent was created
         """
+        address=addresser.get_agent_address(public_key)
+        agent=agent_pb2.Agent(public_key=public_key, name=name ,timestamp=timestamp)
+        container=agent_pb2.AgentContainer()
+        state_entries=self._context.get_state(
+            addresses=[address], timeout=self._timeout)
+        if state_entries:
+            
+            container.ParseFromString(state_entries[0].data)
+        container.entries.extend([agent])
+        data=container.SerializeToString()
+        
+       updated_state={}
+       updated_state[address]=data
+        self._context.set_state(updated_state, timeout=self._timeout)
+        
         #    Write code here
     
 
@@ -56,6 +84,17 @@ class SimpleSupplyState(object):
         Returns:
             record_pb2.Record: Record with the provided record_id
         """
+        
+        address=addresser.get_record_address(record_id)
+        state_entries=self._context.get_state(
+            addresses=[address], timeout=self._timeout)
+        if state_entries:
+            container=record_pb2.RecordContainer()
+            container.ParseFromString(state_entries[0].data)
+            for record in container.entries:
+                if record.record_id==record_id:
+                    return record
+        
         #    Write code here
 
     def set_record(self,
@@ -73,12 +112,62 @@ class SimpleSupplyState(object):
             record_id (str): Unique ID of the record
             timestamp (int): Unix UTC timestamp of when the agent was created
         """
+        address=addresser.get_record_address(record_id)
+        owner=record_pb2.Record.Owner(agent_id=public_key,timestamp=timestamp)
+        location=record_pb2.Record.Location(latitude=latitude,longitude=longitude,timestamp=timestamp)
+        record=record_pb2.Record(record_id=record_id,owners=[owner],locations=[location])
+        container=record_pb2.RecordContainer()
+        state_entries=self._context.get_state(addresses=[address],timeout=self._timeout)
+        if state_entries:
+             container.ParseFromString(state_entries[0].data)
+        container.entries.extend([record])
+        data=container.SerializeToString()
+        updated_state={}
+            
+        updated_state[address]=data
+        self._context.set_state(updated_state,timeout=self_timeout)
+                                           
         #    Write code here
 
 
     def transfer_record(self, receiving_agent, record_id, timestamp):
+        
+        owner=record_pb2.Record.Owner(agent_id=receiving_agent,timestamp=timestamp)
+        address=addresser.get_record_address(record_id)
+        
+        container=record_pb2.RecordContainer()
+        state_entries=self._context.get_state(addresses=[address],timeout=self._timeout)
+        if state_entries:
+             container.ParseFromString(state_entries[0].data)
+             for record in container.entries:
+                if record.record_id==record_id:
+                    record.owners.extend([owner])
+         data=container.SerializeToString()
+        updated_state={}
+            
+        updated_state[address]=data
+        self._context.set_state(updated_state,timeout=self_timeout)
+                    
+                   
         #    Write code here
 
 
     def update_record(self, latitude, longitude, record_id, timestamp):
+         location=record_pb2.Record.Location(latitude=latitude,longitude=longitude,timestamp=timestamp)
+            address=addresser.get_record_address(record_id)
+        
+        container=record_pb2.RecordContainer()
+        state_entries=self._context.get_state(addresses=[address],timeout=self._timeout)
+        if state_entries:
+             container.ParseFromString(state_entries[0].data)
+             for record in container.entries:
+                if record.record_id==record_id:
+                    record.locations.extend([location])
+         data=container.SerializeToString()
+        updated_state={}
+            
+        updated_state[address]=data
+        self._context.set_state(updated_state,timeout=self_timeout)
+                    
+        
         #    Write code here
