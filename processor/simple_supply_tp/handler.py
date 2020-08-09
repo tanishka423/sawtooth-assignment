@@ -80,18 +80,67 @@ class SimpleSupplyHandler(TransactionHandler):
 
 
 def _create_agent(state, public_key, payload):
+    if state.get_agent(public_key):
+        raise InvalidTransaction('public key {} already exists'.format(public_key))
+     state.set_agent(
+         public_key=public_key,
+         name=payload.data.name,
+         timestamp=payload.timestamp)
+         
+       
+    
     #    Write code here
 
 
 def _create_record(state, public_key, payload):
+    if state.get_agent(public_key) is None:
+        raise InvalidTransaction('public key {} does not exist'.format(public_key))
+    if state.data.record_id=='':
+        raise InvalidTransaction('no record')
+    if state.get_record(payload.data.record_id):
+        raise InvalidTransaction('record exists'.format(payload.data.record_id))
+     _validate_latlng(payload.data.latitude,payload.data.longitude)
+    
+    state.set_record(
+        public_key=public_key,
+        latitude=payload.data.latitude,
+        longitude=payload.data.longitude,
+        record_id=payload.data.record_id,
+        timestamp=payload.timestamp)
+        
     #    Write code here
 
 
 def _transfer_record(state, public_key, payload):
+    if state.get_agent(payload.data.receiving_agent) is None:
+        raise InvalidTransaction('agent with public key{} ''not exists'.format(payload.data.receiving_agent))
+     record=state.get_record(payload.data.record_id)
+    if record is None:
+        raise invalidTransaction('record with record id {} does not''exists'.format(payload.data.record_id))
+     if not _validate_record_owner(signer_public_key=public_key,record=record):
+        raise InvalidTransaction('signer is not the owner of the record')
+      state.transfer_record(
+          receiving_agent=payload.data.receving_agent,
+          record_id=payload.data.record_id,
+          timestamp=payload.timestamp)
+       
     #    Write code here
 
 
 def _update_record(state, public_key, payload):
+    record=state.get_record(payload.data.record_id)
+    if record is None:
+        raise invalidTransaction('record with record id {} does not''exists'.format(payload.data.record_id))
+    if not _validate_record_owner(signer_public_key=public_key,record=record):
+        raise InvalidTransaction('signer is not the owner of the record')
+    _validate_latlng(payload.data.latitude,payload.data.longitude)
+    state.update_record(
+        latitude=payload.data.latitude,
+        longitude=payload.data.longitude,
+        record_id=payload.data.record_id,
+        timestamp=payload.timestamp)
+        
+    
     #    Write code here
 
 
@@ -99,11 +148,18 @@ def _validate_record_owner(signer_public_key, record):
     """Validates that the public key of the signer is the latest (i.e.
     current) owner of the record
     """
+    lastest_owner=max(record.owners,key=lambda obj:obj.timestamp).agent_id
+    return latest_owner==signer_public_key
+    
     #    Write code here
 
 
 def _validate_latlng(latitude, longitude):
-    #    Write code here
+    if not MIN_LAT <=latitude<=MAX_LAT:
+        raise InvalidTransaction('latitude must be between -90 to 90''got{}'.format(latitude/1e6))
+    if not MIN_LNG<=longitude<=MAX_LNG:
+        raise InvalidTransaction('longitude must be between -180 to 180''got{}'.format(longitude/1e6))
+        #    Write code here
 
 
 def _validate_timestamp(timestamp):
@@ -113,4 +169,9 @@ def _validate_timestamp(timestamp):
     NOTE: Timestamp validation can be challenging since the machines that are
     submitting and validating transactions may have different system times
     """
+    dts=datetime.datetime.utcnow()
+    current_time=round(time.mktime(dts.timetuple())+dts.microsecond/1e6)
+    if (timestamp-current_time)>SYNC_TOLERANCE:
+        raise InvalidTransaction('timestamp must be less than local time.''expected{0} in ({1}-{2},{1}+{2})'.format(timestamp,current_time,SYNC_TOLERANCE))
+          
     #    Write code here
